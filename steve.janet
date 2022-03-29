@@ -48,6 +48,9 @@
   (let [sprite (cond (self :dead)
                  :steve-dead
 
+                 (not (self :has-cross))
+                 :steve-attack
+
                  :steve-stand)]
     (draw-sprite (scale-pos (self :pos))
                  sprite 0

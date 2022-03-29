@@ -70,47 +70,62 @@
     (do
 
       (clear-background :gray)
-      (defer (rl-pop-matrix)
-        (rl-push-matrix)
-        (rl-translatef ;render-offset
-                       0)
-        (rl-scalef scaling scaling 1)
 
-        (draw-rectangle 0 0 ;game-size :black)
+      (when (steve :dead)
+        (+= death-timer (get-frame-time)))
 
-        (def nof-living (length (filter |(not ($ :dead)) gos)))
-        (when (and (< nof-living (+ 15 (max 0 (* 2 (- (length gos) 15)))))
-                   (> (- (+ 0.01 (* 0.001 (length gos)))
-                         (* 0.001 nof-living))
-                      (math/random)))
+      (if (> death-timer 5)
+        (do
+          (draw-rectangle 0 0 2000 2000 :black)
+          (fj/draw-text "You died. Press R." 50 50 24 :white))
 
-          (var pos [(* (game-size 0) (math/random))
-                    (* (game-size 1) (math/random))])
-          (while (< (v/dist pos (steve :pos)) 40)
-            (set pos [(* (game-size 0) (math/random))
-                      (* (game-size 1) (math/random))]))
+        (defer (rl-pop-matrix)
+          (rl-push-matrix)
+          (rl-translatef ;render-offset
+                         0)
+          (rl-scalef scaling scaling 1)
 
-          (array/push gos (new-skel pos)))
+          (draw-rectangle 0 0 ;game-size :black)
 
-        (loop [go :in gos]
-          (:update go)
-          (unless (go :dead)
-            (update go :pos
-                    (fn [p]
-                      (def [x y] p)
-                      (put p 0 (max 0 (min (game-size 0) x)))
-                      (put p 1 (max 0 (min (game-size 1) y)))))))
+          (def nof-living (length (filter |(not ($ :dead)) gos)))
+          (when (and (< nof-living (+ 15 (max 0 (* 2 (- (length gos) 15)))))
+                     (> (- (+ 0.01 (* 0.001 (length gos)))
+                           (* 0.001 nof-living))
+                        (math/random)))
 
-        (var i 0)
-        (while (< i (length gos))
-          (if ((gos i) :remove)
-            (array/remove gos i)
-            (++ i)))
+            (var pos [(* (game-size 0) (math/random))
+                      (* (game-size 1) (math/random))])
+            (while (< (v/dist pos (steve :pos)) 40)
+              (set pos [(* (game-size 0) (math/random))
+                        (* (game-size 1) (math/random))]))
 
-        (loop [go :in gos]
-          (:render go))
+            (array/push gos (new-skel pos)))
 
-        (render-ui)))
+          (loop [go :in gos]
+            (:update go)
+            (unless (go :dead)
+              (update go :pos
+                      (fn [p]
+                        (def [x y] p)
+                        (if (tuple? p)
+                          [(max 0 (min (game-size 0) x))
+                           (max 0 (min (game-size 1) y))]
+                          (do (put p 0 (max 0 (min (game-size 0) x)))
+                            (put p 1 (max 0 (min (game-size 1) y)))))))))
+
+          (var i 0)
+          (while (< i (length gos))
+            (if ((gos i) :remove)
+              (array/remove gos i)
+              (++ i)))
+
+          (loop [go :in gos]
+            (:render go))
+
+          (render-ui)
+
+          (when (steve :dead)
+            (draw-rectangle 0 0 ;game-size [0 0 0 (clamp (/ death-timer 5))])))))
     ([err fib]
       (debug/stacktrace fib err ""))))
 
@@ -174,35 +189,27 @@
         (init))
 
       (begin-drawing)
-      (if (steve :dead)
-        (do
-          (+= death-timer (get-frame-time))
-          (clear-background :white)
-          (clear-background [0 0 0 (clamp (/ death-timer 10))])
-          (when (> death-timer 10)
-            (fj/draw-text "You died. Press R." 50 50 24 :white)))
-        (do
-          (clear-background :white)
+      (clear-background :white)
 
-          (def el {:width (get-screen-width)
-                   :height (get-screen-height)
-                   :render-x 0
-                   :render-y 0
-                   :focused? true})
+      (def el {:width (get-screen-width)
+               :height (get-screen-height)
+               :render-x 0
+               :render-y 0
+               :focused? true})
 
-          (let [new-mp (get-mouse-position)]
-            (unless (= new-mp last-mp)
-              (set last-mp new-mp)
-              (on-event el [:mouse-move new-mp])))
+      (let [new-mp (get-mouse-position)]
+        (unless (= new-mp last-mp)
+          (set last-mp new-mp)
+          (on-event el [:mouse-move new-mp])))
 
-          (loop [k :in ks]
-            (when (key-pressed? k) (on-event el [:key-down k]))
-            (when (key-released? k) (on-event el [:key-release k])))
+      (loop [k :in ks]
+        (when (key-pressed? k) (on-event el [:key-down k]))
+        (when (key-released? k) (on-event el [:key-release k])))
 
-          (loop [mb :in [0]]
-            (when (mouse-button-pressed? mb) (on-event el [:press last-mp])))
+      (loop [mb :in [0]]
+        (when (mouse-button-pressed? mb) (on-event el [:press last-mp])))
 
-          (render el)))
+      (render el)
       (end-drawing)))
 
   (close-window))
