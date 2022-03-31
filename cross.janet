@@ -69,21 +69,16 @@
   (try
     (do
 
-      (clear-background :gray)
-
       (when (steve :dead)
         (+= death-timer (get-frame-time)))
 
       (if (> death-timer 5)
         (do
           (draw-rectangle 0 0 2000 2000 :black)
-          (fj/draw-text "You died. Press R." 50 50 24 :white))
+          (fj/draw-text "You died. Press R." 10 10 12 :white))
 
         (defer (rl-pop-matrix)
           (rl-push-matrix)
-          (rl-translatef ;render-offset
-                         0)
-          (rl-scalef scaling scaling 1)
 
           (draw-rectangle 0 0 ;game-size :black)
 
@@ -146,11 +141,7 @@
   (match ev
     {:mouse/down p}
     (:throw steve
-            (-> (v/v-
-                  (-> p
-                      (v/v- render-offset)
-                      (v/v* (/ 1 scaling)))
-                  (steve :pos))
+            (-> (v/v- p (steve :pos))
                 v/normalize))
 
     ({:key/down k} (key-down k))
@@ -161,7 +152,10 @@
 
 (when (dyn :freja/loading-file)
   (start-game {:render render
-               :on-event on-event})
+               :on-event on-event
+               :size game-size
+               :scale scaling
+               :border :gray})
 
   (init))
 
@@ -187,27 +181,33 @@
         (init))
 
       (begin-drawing)
-      (clear-background :white)
 
-      (def el {:width (get-screen-width)
-               :height (get-screen-height)
-               :render-x 0
-               :render-y 0
-               :focused? true})
+      (defer (rl-pop-matrix)
+        (rl-push-matrix)
+        (rl-scalef scaling scaling 1)
 
-      (let [new-mp (get-mouse-position)]
-        (unless (= new-mp last-mp)
-          (set last-mp new-mp)
-          (on-event el [:mouse-move new-mp])))
+        (clear-background :white)
 
-      (loop [k :in ks]
-        (when (key-pressed? k) (on-event el [:key-down k]))
-        (when (key-released? k) (on-event el [:key-release k])))
+        (def el {:width (get-screen-width)
+                 :height (get-screen-height)
+                 :render-x 0
+                 :render-y 0
+                 :focused? true})
 
-      (loop [mb :in [0]]
-        (when (mouse-button-pressed? mb) (on-event el [:press last-mp])))
+        (let [new-mp (get-mouse-position)]
+          (unless (= new-mp last-mp)
+            (set last-mp new-mp)
+            (on-event el {:mouse/move new-mp})))
 
-      (render el)
+        (loop [k :in ks]
+          (when (key-pressed? k) (on-event el {:key/down k}))
+          (when (key-released? k) (on-event el {:key/release k})))
+
+        (loop [mb :in [0]]
+          (when (mouse-button-pressed? mb)
+            (on-event el {:mouse/down (v/v* last-mp (/ 1 scaling))})))
+
+        (render el))
       (end-drawing)))
 
   (close-window))
