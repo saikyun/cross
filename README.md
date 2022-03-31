@@ -1,6 +1,6 @@
 # cross
 
-![image](https://user-images.githubusercontent.com/2477927/160694091-defaac53-85df-4982-9077-fe5478af9b09.png)
+![image](https://user-images.githubusercontent.com/2477927/160695778-4ebc305e-014c-4576-9bb9-c66a83fe1a5a.png)
 
 2d top down action game made in 3h.
 
