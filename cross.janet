@@ -144,21 +144,19 @@
 (defn on-event
   [el ev]
   (match ev
-    [:press p]
+    {:mouse/down p}
     (:throw steve
             (-> (v/v-
-                  (-> (v/v- p
-                            [(dyn :offset-x)
-                             (dyn :offset-y)])
+                  (-> p
                       (v/v- render-offset)
                       (v/v* (/ 1 scaling)))
                   (steve :pos))
                 v/normalize))
 
-    ([:key-down k] (key-down k))
+    ({:key/down k} (key-down k))
     (update-in steve ;(key-down k))
 
-    ([:key-release k] (key-up k))
+    ({:key/release k} (key-up k))
     (update-in steve ;(key-up k))))
 
 (when (dyn :freja/loading-file)
