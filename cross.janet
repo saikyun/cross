@@ -68,7 +68,6 @@
 
   (try
     (do
-
       (when (steve :dead)
         (+= death-timer (get-frame-time)))
 
@@ -150,64 +149,9 @@
     ({:key/release k} (key-up k))
     (update-in steve ;(key-up k))))
 
-(when (dyn :freja/loading-file)
-  (start-game {:render render
-               :on-event on-event
-               :size game-size
-               :scale scaling
-               :border :gray})
-
-  (init))
-
-(def ks [:1 :2 :w :s :a :d])
-
-(defn main
-  [& _]
-  (print "main????")
-
-  (init-window ;(v/v* game-size scaling) "Cross")
-
-  '(toggle-fullscreen)
-
-  (init)
-
-  (set-target-fps 60)
-
-  (var last-mp nil)
-
-  (with-dyns [:offset-x 0 :offset-y 0]
-    (while (not (window-should-close))
-      (when (key-down? :r)
-        (init))
-
-      (begin-drawing)
-
-      (defer (rl-pop-matrix)
-        (rl-push-matrix)
-        (rl-scalef scaling scaling 1)
-
-        (clear-background :white)
-
-        (def el {:width (get-screen-width)
-                 :height (get-screen-height)
-                 :render-x 0
-                 :render-y 0
-                 :focused? true})
-
-        (let [new-mp (get-mouse-position)]
-          (unless (= new-mp last-mp)
-            (set last-mp new-mp)
-            (on-event el {:mouse/move new-mp})))
-
-        (loop [k :in ks]
-          (when (key-pressed? k) (on-event el {:key/down k}))
-          (when (key-released? k) (on-event el {:key/release k})))
-
-        (loop [mb :in [0]]
-          (when (mouse-button-pressed? mb)
-            (on-event el {:mouse/down (v/v* last-mp (/ 1 scaling))})))
-
-        (render el))
-      (end-drawing)))
-
-  (close-window))
+(start-game {:render render
+             :on-event on-event
+             :size game-size
+             :scale scaling
+             :border :gray
+             :init init})
